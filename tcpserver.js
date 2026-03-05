@@ -17,6 +17,7 @@ function onConnection(socket){
         socket.write(data);
 
         if(data.includes('q')){
+            console.log("Closing Echo Server")
             socket.end();
         }
     })
