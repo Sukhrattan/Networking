@@ -2,7 +2,54 @@ const net = require('net');
 let clients = [];
 let id = 1;
 
-function newConn(socket){
+function soInit(socket){
+    const conn = {
+        socket:socket,
+        reader:null,
+        ended:false,
+        err:null
+    };
+    socket.on('data',(data)=>{
+        console.assert(conn.reader);
+        conn.socket.pause();
+        conn.reader.resolve(data);
+        conn.reader=null;
+    })
+    socket.on('error', (err) => {
+        conn.err = err;
+        if (conn.reader) {
+            conn.reader.reject(err);
+            conn.reader = null;
+        }
+    });
+    return conn;
+}
+
+
+function soRead(conn){
+    console.assert(!conn.reader,"Continous Read calls are not allowed");
+    return new Promise((resolve,reject)=>{
+        if (conn.ended) return resolve(Buffer.from(''));
+        if (conn.err) return reject(conn.err);
+
+        conn.reader = { resolve, reject };
+        conn.socket.resume();
+    })
+}
+function soWrite(conn,data){
+    return new Promise((resolve,reject)=>{
+        conn.socket.write(data);
+    })
+}
+async function handleMessage(conn,message){
+    if(message == 'hello'){
+        await soWrite(conn,"Hello User!");
+    }
+
+}
+
+async function newConn(socket){
+    const conn = soInit(socket);
     const client = {
         id: id++,
         socket: socket,
@@ -12,40 +59,23 @@ function newConn(socket){
     };
     clients.push(client);
     console.log(`Client ${client.id} connected to Echo Server` );
-
-
-
-    socket.on('end',()=>{
-        console.log(`Client ${client.id} disconnected from Echo Server at ${Date.now()}` );
-        clients = clients.filter(client => client.socket!==socket);
-    })
-    socket.on('data',(data)=>{
-        let message = data.toString().trim();
-
-        if(message == "hello"||message == "hi"|| message == "namaste"){
-            socket.write("Hello! How can I help you?");
+    try{
+        while(true){
+            const data = await soRead(conn);
+            if(data.length===0)break;
+            let message = data.toString().trim();
+            await handleMessage(conn,message);
         }
-        if(message == "time"){
-            const now = new Date();
+    }
+    catch(err){
+        console.log(`Client : ${client.id} : `,err);
+    }
 
-            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
 
-            socket.write(time);
 
-        }
-        if(message.startsWith("say ")||message.startsWith("broadcast ")){
-            clients.forEach(client=>{
-                if(client.socket!==socket){
-                    client.socket.write(message);
-                }
-            })
-        }
-        if(data.toString().includes('q')){
-            console.log('Ending Connection!');
-            socket.end();
-        }
-    })
+
+
 
 }
 let server = net.createServer();
