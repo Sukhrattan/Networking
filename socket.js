@@ -1,4 +1,5 @@
 const net = require('net');
+//array to contain the clients!
 let clients = [];
 let id = 1;
 
@@ -78,6 +79,7 @@ async function newConn(socket){
         connectedAt: Date.now()
     };
     clients.push(client);
+
     console.log(`Client ${client.id} connected to Echo Server` );
     try{
         while(true){
