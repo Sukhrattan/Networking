@@ -15,6 +15,11 @@ function soInit(socket){
         conn.reader.resolve(data);
         conn.reader=null;
     })
+    socket.on('end',(data)=>{
+        console.assert(conn.reader);
+        conn.reader = null;
+        conn.ended=true;
+    })
     socket.on('error', (err) => {
         conn.err = err;
         if (conn.reader) {
@@ -38,12 +43,27 @@ function soRead(conn){
 }
 function soWrite(conn,data){
     return new Promise((resolve,reject)=>{
-        conn.socket.write(data);
+        conn.socket.write(data,(err)=>{
+            if(err)reject(err);
+            else{
+                resolve(conn.reader);
+            }
+        });
     })
 }
 async function handleMessage(conn,message){
     if(message == 'hello'){
         await soWrite(conn,"Hello User!");
+    }
+    if(message == 'q'){
+        conn.socket.end();
+    }
+    if(message == "list"){
+        let result = "";
+        clients.forEach((client)=>{
+            result+= client.id;
+        });
+        await soWrite(conn,result)
     }
 
 }
@@ -71,11 +91,11 @@ async function newConn(socket){
         console.log(`Client : ${client.id} : `,err);
     }
 
-
-
-
-
-
+    finally{
+        clients.forEach((client)=>{
+            clients = clients.filter(client.socket!==socket);
+        })
+    }
 
 }
 let server = net.createServer();
