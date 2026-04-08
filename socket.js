@@ -94,8 +94,8 @@ async function newConn(socket){
     }
 
     finally{
-        clients.forEach((client)=>{
-            clients = clients.filter(client.socket!==socket);
+        clients.forEach(()=>{
+            clients = clients.filter(c=>c.socket!==socket);
         })
     }
 
