@@ -74,7 +74,7 @@ async function newConn(socket){
     const client = {
         id: id++,
         socket: socket,
-        port: socket.remeotePort,
+        port: socket.remotePort,
         Address: socket.remoteAddress,
         connectedAt: Date.now()
     };
