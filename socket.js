@@ -60,7 +60,7 @@ function soBroadcast(conn,data){
     return new Promise((resolve,reject)=>{
         clients.forEach(c=>{
             if(c.socket!==conn.socket){
-                 conn.socket.write(broadcast_message,(err)=>{
+                 c.socket.write(broadcast_message,(err)=>{
                     if(err)reject(err);
                     else resolve(conn.reader);
                 });
