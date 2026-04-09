@@ -69,13 +69,13 @@ function soBroadcast(conn,data){
     })
 }
 async function handleMessage(conn,message){
-    if(message == 'hello'){
+    if(message === 'hello'){
         await soWrite(conn,"Hello User!");
     }
-    if(message == 'q'){
+    if(message === 'q'){
         conn.socket.end();
     }
-    if(message == "list"){
+    if(message === "list"){
         let result = "";
         clients.forEach((client)=>{
             result+= client.id;
