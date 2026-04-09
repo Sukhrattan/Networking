@@ -52,6 +52,22 @@ function soWrite(conn,data){
         });
     })
 }
+function soBroadcast(conn,data){
+    const index = data.indexOf("broadcast");
+
+
+    const broadcast_message = data.substring(index + "broadcast".length).trim();
+    return new Promise((resolve,reject)=>{
+        clients.forEach(c=>{
+            if(c.socket!==conn.socket){
+                 conn.socket.write(broadcast_message,(err)=>{
+                    if(err)reject(err);
+                    else resolve(conn.reader);
+                });
+            }
+        })
+    })
+}
 async function handleMessage(conn,message){
     if(message == 'hello'){
         await soWrite(conn,"Hello User!");
@@ -65,6 +81,9 @@ async function handleMessage(conn,message){
             result+= client.id;
         });
         await soWrite(conn,result)
+    }
+    if(message.startsWith("broadcast")){
+        await soBroadcast(conn,message);
     }
 
 }
