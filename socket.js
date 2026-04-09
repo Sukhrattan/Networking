@@ -95,11 +95,14 @@ async function newConn(socket){
         socket: socket,
         port: socket.remotePort,
         Address: socket.remoteAddress,
-        connectedAt: Date.now()
+        connectedAt: Date.now(),
+        username:null
+
     };
+    client.username = await soRegister(conn);
     clients.push(client);
 
-    console.log(`Client ${client.id} connected to Echo Server` );
+    console.log(`Client ${client.id} connected to Echo Server as ${client.username}` );
     try{
         while(true){
             const data = await soRead(conn);
@@ -118,6 +121,14 @@ async function newConn(socket){
         })
     }
 
+}
+
+async function soRegister(conn){
+    await soWrite(conn,"Enter Username");
+    const data = await soRead(conn);
+    let username;
+    username = data.toString().trim();
+    return username;
 }
 let server = net.createServer();
 server.on('connection',newConn);
