@@ -52,19 +52,38 @@ function soWrite(conn,data){
         });
     })
 }
+function soBroadcast(conn,data){
+    const index = data.indexOf("broadcast");
+
+
+    const broadcast_message = data.substring(index + "broadcast".length).trim();
+    return new Promise((resolve,reject)=>{
+        clients.forEach(c=>{
+            if(c.socket!==conn.socket){
+                 c.socket.write(broadcast_message,(err)=>{
+                    if(err)reject(err);
+                    else resolve(conn.reader);
+                });
+            }
+        })
+    })
+}
 async function handleMessage(conn,message){
-    if(message == 'hello'){
+    if(message === 'hello'){
         await soWrite(conn,"Hello User!");
     }
-    if(message == 'q'){
+    if(message === 'q'){
         conn.socket.end();
     }
-    if(message == "list"){
+    if(message === "list"){
         let result = "";
         clients.forEach((client)=>{
             result+= client.id;
         });
         await soWrite(conn,result)
+    }
+    if(message.startsWith("broadcast")){
+        await soBroadcast(conn,message);
     }
 
 }
@@ -74,13 +93,16 @@ async function newConn(socket){
     const client = {
         id: id++,
         socket: socket,
-        port: socket.remeotePort,
+        port: socket.remotePort,
         Address: socket.remoteAddress,
-        connectedAt: Date.now()
+        connectedAt: Date.now(),
+        username:null
+
     };
+    client.username = await soRegister(conn);
     clients.push(client);
 
-    console.log(`Client ${client.id} connected to Echo Server` );
+    console.log(`Client ${client.id} connected to Echo Server as ${client.username}` );
     try{
         while(true){
             const data = await soRead(conn);
@@ -94,11 +116,19 @@ async function newConn(socket){
     }
 
     finally{
-        clients.forEach((client)=>{
-            clients = clients.filter(client.socket!==socket);
+        clients.forEach(()=>{
+            clients = clients.filter(c=>c.socket!==socket);
         })
     }
 
+}
+
+async function soRegister(conn){
+    await soWrite(conn,"Enter Username");
+    const data = await soRead(conn);
+    let username;
+    username = data.toString().trim();
+    return username;
 }
 let server = net.createServer();
 server.on('connection',newConn);
